@@ -19,11 +19,11 @@ class Population:
 		self.p_ll = np.zeros(9)
 		self.relevant_other_populations = [self.id]
 		
-	def set_rule_ld(self, k, p):
-		self.p_ld[k] = p
+	#def set_rule_ld(self, k, p):
+	#	self.p_ld[k] = p
 		
-	def set_rule_ll(self, k, p):
-		self.p_ll[k] = p
+	#def set_rule_ll(self, k, p):
+	#	self.p_ll[k] = p
 		
 	def set_relevant_population(self, k):
 		if not k in self.relevant_other_populations:
@@ -51,6 +51,14 @@ class ProbGol:
 		self.current_iter = 0
 		self.populations = [Population() for _ in range(self.n_pop)]
 		self.reset_world()
+		
+	def add_pop(self):
+		self.n_pop += 1
+		self.populations.append(Population())
+		
+	def remove_pop(self):
+		self.n_pop -= 1
+		self.populations.pop()
 		
 	### BASIC ITERATION ###
 	def next_iteration(self):
@@ -127,40 +135,27 @@ class ProgGolView(tk.Frame):
 		self.frame.grid(row=0, column=1)
 		
 		# simulation parameters:
-		self.frame_sim = tk.Frame(self.frame)
+		self.frame_sim = tk.Frame(self.frame, borderwidth=5, relief="groove")
 		self.frame_sim.grid(row=0, column=1)
 		self.text_label_currentspeed = tk.StringVar(self.frame_sim, value='Simulation speed: '+str(1000/self.timer)+' FPS ')
 		self.label_currentspeed = tk.Label(self.frame_sim, textvar=self.text_label_currentspeed).grid(row=0, column=0)
 		self.text_label_pause = tk.StringVar(self.frame_sim, value='')
 		self.label_pause = tk.Label(self.frame_sim, textvar=self.text_label_pause).grid(row=1, column=0)
 		
-		self.frame_sim_buttons = tk.Frame(self.frame_sim)
+		self.frame_sim_buttons = tk.Frame(self.frame_sim, borderwidth=2, relief="sunken")
 		self.frame_sim_buttons.grid(row=2, column=0)
 		button_speed_dec = tk.Button(self.frame_sim_buttons, text='-', command=self.decrease_speed).grid(row=0, column=0)
 		button_speed_pause = tk.Button(self.frame_sim_buttons, text='||', command=self.pause_sim).grid(row=0, column=1)
 		button_speed_inc = tk.Button(self.frame_sim_buttons, text='+', command=self.increase_speed).grid(row=0, column=2)
 		
 		# ProbGol parameters:
-		self.frame_params = tk.Frame(self.frame)
+		self.frame_params = tk.Frame(self.frame, borderwidth=5, relief="groove")
 		self.frame_params.grid(row=1, column=1)
 		
-		l_p_top = tk.Label(self.frame_params, text="P(life|death)").grid(row=0,column=1, columnspan=3)
-		l_p_top = tk.Label(self.frame_params, text="P(life|life)").grid(row=0,column=4, columnspan=3)
-		self.frames_ld = []
 		self.p_ld_entries = []
 		self.p_ll_entries = []
-		for i in range(9):
-			tk.Label(self.frame_params, text=str(i)).grid(row=i+1, column=0)
-			v_ld = tk.StringVar(self.frame_params, value=str(self.probgol.populations[0].p_ld[i]))
-			self.p_ld_entries.append(v_ld)
-			tk.Entry(self.frame_params, width=5, justify=tk.RIGHT, textvariable=v_ld).grid(row=i+1, column=1)
-			tk.Button(self.frame_params, text='+', command=partial(self.increase_ld, 1,i)).grid(row=i+1, column=2)
-			tk.Button(self.frame_params, text='-', command=partial(self.decrease_ld, 1,i)).grid(row=i+1, column=3)
-			v_ll = tk.StringVar(self.frame_params, value=str(self.probgol.populations[0].p_ll[i]))
-			self.p_ll_entries.append(v_ll)
-			tk.Entry(self.frame_params, width=5, justify=tk.RIGHT, textvariable=v_ll).grid(row=i+1, column=4)
-			tk.Button(self.frame_params, text='+', command=partial(self.increase_ll, 1,i)).grid(row=i+1, column=5)
-			tk.Button(self.frame_params, text='-', command=partial(self.decrease_ll, 1,i)).grid(row=i+1, column=6)
+		for k in range(self.probgol.n_pop):
+			self._probgol_frame_parameter_input(self.frame_params, k)
 		
 		# Population density tracking:
 		self.pm_h_scale = 2
@@ -179,6 +174,32 @@ class ProgGolView(tk.Frame):
 		
 		self.pause = False
 		self.after(self.timer, self.step)
+		
+	def _probgol_frame_parameter_input(self, parent, k):
+		self.frame_params_k = tk.Frame(parent, borderwidth=2, relief="sunken")
+		self.frame_params_k.grid(row=1, column=k+1)
+		
+		l_p_top = tk.Label(self.frame_params_k, text="P(life|death)").grid(row=0,column=1, columnspan=3)
+		l_p_top = tk.Label(self.frame_params_k, text="P(life|life)").grid(row=0,column=4, columnspan=3)
+		self.frames_ld = []
+		self.p_ld_entries_k = []
+		self.p_ll_entries_k = []
+		for i in range(9):
+			tk.Label(self.frame_params_k, text=str(i)).grid(row=i+1, column=0)
+			v_ld = tk.StringVar(self.frame_params_k, value=str(self.probgol.populations[0].p_ld[i]))
+			self.p_ld_entries_k.append(v_ld)
+			tk.Entry(self.frame_params_k, width=5, justify=tk.RIGHT, textvariable=v_ld).grid(row=i+1, column=1)
+			tk.Button(self.frame_params_k, text='+', command=partial(self.increase_ld, k,i)).grid(row=i+1, column=2)
+			tk.Button(self.frame_params_k, text='-', command=partial(self.decrease_ld, k,i)).grid(row=i+1, column=3)
+			v_ll = tk.StringVar(self.frame_params_k, value=str(self.probgol.populations[0].p_ll[i]))
+			self.p_ll_entries_k.append(v_ll)
+			tk.Entry(self.frame_params_k, width=5, justify=tk.RIGHT, textvariable=v_ll).grid(row=i+1, column=4)
+			tk.Button(self.frame_params_k, text='+', command=partial(self.increase_ll, k,i)).grid(row=i+1, column=5)
+			tk.Button(self.frame_params_k, text='-', command=partial(self.decrease_ll, k,i)).grid(row=i+1, column=6)
+			
+		self.p_ld_entries.append(self.p_ld_entries_k)
+		self.p_ll_entries.append(self.p_ll_entries_k)
+		
 		
 	### SIMULATION CONTROL ###
 	def increase_speed(self):
@@ -222,7 +243,7 @@ class ProgGolView(tk.Frame):
 	def _draw_cell(self, i,j):
 		self.canvas_world.itemconfig(self.cell_ids[i][j], fill=COLORS[self.probgol.world[i,j, self.probgol.current_iter%2]])
 
-	def _draw_popmeter(self, k=0):
+	def _draw_popmeter(self):
 		if self.probgol.current_iter < 100:
 			for k in range(self.probgol.n_pop):
 				self.popmeter_line_ids[k].append(
@@ -233,12 +254,13 @@ class ProgGolView(tk.Frame):
 					self.pm_h - 100*self.pop_hist[k, self.probgol.current_iter]//self.probgol.get_worldsize()*self.pm_h_scale,
 					width=3, fill=COLORS[k+1]))
 		else:
-			for i in range(99):
-				self.canvas_popmeter.coords(self.popmeter_line_ids[k][i],
-					i*self.pm_w_scale,
-					self.pm_h - 100*self.pop_hist[k, (i+self.probgol.current_iter)%100]//self.probgol.get_worldsize()*self.pm_h_scale,
-					(i+1)*self.pm_w_scale,
-					self.pm_h - 100*self.pop_hist[k, (i+1+self.probgol.current_iter)%100]//self.probgol.get_worldsize()*self.pm_h_scale)
+			for k in range(self.probgol.n_pop):
+				for i in range(99):
+					self.canvas_popmeter.coords(self.popmeter_line_ids[k][i],
+						i*self.pm_w_scale,
+						self.pm_h - 100*self.pop_hist[k, (i+self.probgol.current_iter)%100]//self.probgol.get_worldsize()*self.pm_h_scale,
+						(i+1)*self.pm_w_scale,
+						self.pm_h - 100*self.pop_hist[k, (i+1+self.probgol.current_iter)%100]//self.probgol.get_worldsize()*self.pm_h_scale)
 
 	### ITERATION & INPUT CONTROL ###
 	def step(self):
@@ -249,17 +271,18 @@ class ProgGolView(tk.Frame):
 		self.draw_world()
 		
 		# get current life-probabilities:
-		for i in range(9):
-			try:
-				self.probgol.populations[0].p_ld[i] = float(self.p_ld_entries[i].get())
-				self._update_p_ld(1,i)
-			except ValueError:
-				pass
-			try:
-				self.probgol.populations[0].p_ll[i] = float(self.p_ll_entries[i].get())
-				self._update_p_ll(1,i)
-			except ValueError:
-				pass
+		for k in range(self.probgol.n_pop):
+			for i in range(9):
+				try:
+					self.probgol.populations[k].p_ld[i] = float(self.p_ld_entries[k][i].get())
+					self._update_p_ld(k,i)
+				except ValueError:
+					pass
+				try:
+					self.probgol.populations[k].p_ll[i] = float(self.p_ll_entries[k][i].get())
+					self._update_p_ll(k,i)
+				except ValueError:
+					pass
 		
 		for k in range(1, self.probgol.n_pop+1):
 			self.pop_hist[k-1, self.probgol.current_iter%100] = self.probgol.population_size[k]
@@ -269,7 +292,7 @@ class ProgGolView(tk.Frame):
 		
 		full_pop_label_text = ""
 		for k in range(1, self.probgol.n_pop+1):
-			full_pop_label_text += "Population "+str(k)+": "+str(100*self.probgol.population_size[k]//self.probgol.get_worldsize())+"%\n"
+			full_pop_label_text += "Population "+str(k)+": "+str(100*self.probgol.population_size[k]//self.probgol.get_worldsize())#+"%\n"
 		self.pop_label_text.set(full_pop_label_text)
 		
 		t_delta = time.time() - ts
@@ -277,40 +300,54 @@ class ProgGolView(tk.Frame):
 		if not self.pause:
 			self.after(wait, self.step)
 			
+	def _get_probabilities_from_input(self):
+		for k in range(self.probgol.n_pop):
+			for i in range(9):
+				try:
+					self.probgol.populations[k].p_ld[i] = float(self.p_ld_entries[k][i].get())
+					self._update_p_ld(k,i)
+				except ValueError:
+					pass
+				try:
+					self.probgol.populations[k].p_ll[i] = float(self.p_ll_entries[k][i].get())
+					self._update_p_ll(k,i)
+				except ValueError:
+					pass
+			
 	### INPUT CONTROL ###
 	# TODO
 	def _update_p_ld(self,k,i):
-		if self.probgol.populations[k-1].p_ld[i] < 0:
-			self.probgol.populations[k-1].p_ld[i] = 0
-		elif self.probgol.populations[k-1].p_ld[i] > 1:
-			self.probgol.populations[k-1].p_ld[i] = 1
-		self.probgol.populations[k-1].p_ld[i] = round(self.probgol.populations[k-1].p_ld[i],2)
-		self.p_ld_entries[i].set("{:0<.2f}".format(self.probgol.populations[k-1].p_ld[i]))
+		if self.probgol.populations[k].p_ld[i] < 0:
+			self.probgol.populations[k].p_ld[i] = 0
+		elif self.probgol.populations[k].p_ld[i] > 1:
+			self.probgol.populations[k].p_ld[i] = 1
+		self.probgol.populations[k].p_ld[i] = round(self.probgol.populations[k].p_ld[i],2)
+		self.p_ld_entries[k][i].set("{:0<.2f}".format(self.probgol.populations[k].p_ld[i]))
 	
 	def _update_p_ll(self,k,i):
-		if self.probgol.populations[k-1].p_ll[i] < 0:
-			self.probgol.populations[k-1].p_ll[i] = 0
-		elif self.probgol.populations[k-1].p_ll[i] > 1:
-			self.probgol.populations[k-1].p_ll[i] = 1
-		self.probgol.populations[k-1].p_ll[i] = round(self.probgol.populations[k-1].p_ll[i],2)
-		self.p_ll_entries[i].set("{:0<.2f}".format(self.probgol.populations[k-1].p_ll[i]))
+		if self.probgol.populations[k].p_ll[i] < 0:
+			self.probgol.populations[k].p_ll[i] = 0
+		elif self.probgol.populations[k].p_ll[i] > 1:
+			self.probgol.populations[k].p_ll[i] = 1
+		self.probgol.populations[k].p_ll[i] = round(self.probgol.populations[k].p_ll[i],2)
+		self.p_ll_entries[k][i].set("{:0<.2f}".format(self.probgol.populations[k].p_ll[i]))
 		
 	def increase_ld(self, k, i):
-		self.probgol.populations[k-1].p_ld[i] += 0.05
+		self.probgol.populations[k].p_ld[i] += 0.05
 		self._update_p_ld(k,i)
 		
 	def decrease_ld(self, k, i):
-		self.probgol.populations[k-1].p_ld[i] -= 0.05
+		self.probgol.populations[k].p_ld[i] -= 0.05
 		self._update_p_ld(k,i)
 		
 	def increase_ll(self, k, i):
-		self.probgol.populations[k-1].p_ll[i] += 0.05
+		self.probgol.populations[k].p_ll[i] += 0.05
 		self._update_p_ll(k,i)
 		
 	def decrease_ll(self, k, i):
-		self.probgol.populations[k-1].p_ll[i] -= 0.05
+		self.probgol.populations[k].p_ll[i] -= 0.05
 		self._update_p_ll(k,i)
 
-probgol = ProbGol(size=50,n=1)
+probgol = ProbGol(size=50,n=2)
 app = ProgGolView(master=tk.Tk(), probgol=probgol)
 app.mainloop()
